@@ -1,0 +1,115 @@
+name: Generate and Obfuscate Worker Script
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'  # 仅匹配分支推送，排除标签推送
+    paths:
+      - '测试'
+
+jobs:
+  build-and-obfuscate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 解决git push 403权限问题 核心修复
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Obfuscator
+        run: npm install javascript-obfuscator
+
+      - name: Obfuscate from local source file - 生成2个混淆文件
+        run: |
+          cat > obfuscate.js << 'EOF'
+          const JavaScriptObfuscator = require('javascript-obfuscator');
+          const fs = require('fs');
+          const path = require('path');
+          
+          // ✅ 配置：1个源文件 + 2个输出混淆文件
+          const sourceFileName = '测试'; // 源文件
+          const outputFile1 = '1_worker.js';    // 第一个混淆文件
+          const outputFile2 = '少女';    // 第二个混淆文件
+          const sourceFilePath = path.join(process.cwd(), sourceFileName);
+
+          // 检查源文件是否存在
+          if (!fs.existsSync(sourceFilePath)) {
+            console.error('错误：在路径 \'' + sourceFilePath + '\' 未找到源文件。');
+            process.exit(1);
+          }
+
+          // 读取源文件内容
+          const originalCode = fs.readFileSync(sourceFilePath, 'utf8');
+          if (!originalCode || originalCode.trim().length === 0) {
+            console.error('错误：源文件 ' + sourceFileName + ' 为空。');
+            process.exit(1);
+          }
+
+          // ✅ 你的原混淆配置 - 完全保留 无任何修改
+          const obfuscationOptions = {
+              compact: true,
+              controlFlowFlattening: false,
+              controlFlowFlatteningThreshold: 0,
+              deadCodeInjection: false,
+              stringArray: true,
+              stringArrayEncoding: ['base64'],
+              stringArrayThreshold: 1.0,
+              stringArrayRotate: true,
+              stringArrayShuffle: true,
+              stringArrayWrappersCount: 2,
+              stringArrayWrappersChainedCalls: false,
+              stringArrayWrappersParametersMaxCount: 3,
+              renameGlobals: true,
+              identifierNamesGenerator: 'mangled-shuffled',
+              identifierNamesCache: null,
+              identifiersPrefix: '',
+              renameProperties: false,
+              renamePropertiesMode: 'safe',
+              ignoreImports: false,
+              target: 'browser',
+              numbersToExpressions: false,
+              simplify: false,
+              splitStrings: true,
+              splitStringsChunkLength: 1,
+              transformObjectKeys: false,
+              unicodeEscapeSequence: true,
+              selfDefending: false,
+              debugProtection: false,
+              debugProtectionInterval: 0,
+              disableConsoleOutput: true,
+              domainLock: []
+          };
+
+          // ✅ 核心修改：执行一次混淆 → 写入两个不同的文件
+          const obfuscatedCode = JavaScriptObfuscator.obfuscate(originalCode, obfuscationOptions).getObfuscatedCode();
+          const outputPath1 = path.join(process.cwd(), outputFile1);
+          const outputPath2 = path.join(process.cwd(), outputFile2);
+          
+          // 写入第一个混淆文件
+          fs.writeFileSync(outputPath1, obfuscatedCode, 'utf8');
+          console.log('✅ 成功混淆并保存至 \'' + outputFile1 + '\'。');
+          // 写入第二个混淆文件
+          fs.writeFileSync(outputPath2, obfuscatedCode, 'utf8');
+          console.log('✅ 成功混淆并保存至 \'' + outputFile2 + '\'。');
+          EOF
+          node obfuscate.js
+
+      - name: Commit and push TWO obfuscated files
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          # ✅ 核心修改：同时添加 少年 + 少女 两个文件
+          git add '1_worker.js' '少女'
+          if git diff --staged --quiet; then
+            echo "No changes to commit, the obfuscated files are already up-to-date."
+          else
+            git commit -m "部署用这个 | 同步生成2个混淆文件"
+            git push
+          fi
