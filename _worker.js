@@ -1,19 +1,19 @@
-﻿import { connect } from "cloudflare:sockets";
+import { connect } from "cloudflare:sockets";
 let config_JSON, 反代IP = '', 启用SOCKS5反代 = null, 启用SOCKS5全局反代 = false, 我的SOCKS5账号 = '', parsedSocks5Address = {};
 let 缓存反代IP, 缓存反代解析数组, 缓存反代数组索引 = 0, 启用反代兜底 = true;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
-const Pages静态页面 = 'https://edt-pages.github.io';
+const Pages静态页面 = 'https://zbq1926.github.io';
 ///////////////////////////////////////////////////////主程序入口///////////////////////////////////////////////
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
         const UA = request.headers.get('User-Agent') || 'null';
         const upgradeHeader = request.headers.get('Upgrade');
-        const 管理员密码 = env.ADMIN || env.admin || env.PASSWORD || env.password || env.pswd || env.TOKEN || env.KEY || env.UUID || env.uuid;
+        const 管理员密码 = env.ADMIN || env.admin || env.PASSWORD || env.password || env.pswd || env.TOKEN || env.KEY || 'doocker123';
         const 加密秘钥 = env.KEY || '勿动此默认密钥，有需求请自行通过添加变量KEY进行修改';
         const userIDMD5 = await MD5MD5(管理员密码 + 加密秘钥);
         const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
-        const envUUID = env.UUID || env.uuid;
+        const envUUID = env.UUID || env.uuid || 'a4058757-9099-4410-b324-29284609be87';
         const userID = (envUUID && uuidRegex.test(envUUID)) ? envUUID.toLowerCase() : [userIDMD5.slice(0, 8), userIDMD5.slice(8, 12), '4' + userIDMD5.slice(13, 16), '8' + userIDMD5.slice(17, 20), userIDMD5.slice(20)].join('-');
         const hosts = env.HOST ? (await 整理成数组(env.HOST)).map(h => h.toLowerCase().replace(/^https?:\/\//, '').split('/')[0].split(':')[0]) : [url.hostname];
         const host = hosts[0];
